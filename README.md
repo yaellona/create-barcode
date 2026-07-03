@@ -43,6 +43,18 @@
 
 ``
 
+### 运行
+
+需要事先下载`uv`,可以参考[uv中文文档](https://uv.doczh.com/getting-started/installation/)
+
+执行下面命令即可
+
+```bash
+uv run ./main.py
+```
+
+图片保存在`./output`中
+
 ## 效果
 
 ![](./assets/1_03.png)
