@@ -6,7 +6,7 @@
 """
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from io import BytesIO
 from pathlib import Path
 
@@ -61,6 +61,16 @@ class Config:
     background_color: str = "white"
     text_color: str = "black"
 
+    # ---- 字段值网格映射 ----
+    # 按 JSON fields 中的出现顺序，第 i 个值放到 (列索引, 行索引) 对应位置。
+    # 列: 0=col1_x 1=col2_x 2=col3_x；行: 0=row1_y 1=row2_y
+    # 布局：
+    #   [种类名称] [field0] [field1]   ← row1
+    #   [field2]   [field3] [field4]   ← row2
+    field_grid: list = field(default_factory=lambda: [
+        (1, 0), (2, 0), (0, 1), (1, 1), (2, 1),
+    ])
+
 
 # ==================== 种类名称映射（占位，后续补充）====================
 CATEGORY_NAMES: dict[int, str] = {
@@ -94,22 +104,11 @@ def get_font(size: int) -> ImageFont.FreeTypeFont:
 
 # ==================== 字段解析 ====================
 def resolve_fields(item: dict) -> dict:
-    """根据 category_id 选择正确的字段，返回统一结构。"""
+    """按 JSON 中的出现顺序提取字段值，不依赖 key 名称。"""
     cid = item["category_id"]
-    f = item["fields"]
-    if cid in (1, 2):
-        qty = f.get("quantity", "")
-        model = f.get("model", "")
-    else:
-        qty = f.get("weight", "")
-        model = f.get("joint", "")
     return {
         "category_name": CATEGORY_NAMES.get(cid, f"种类{cid}"),
-        "quantity_or_weight": qty,
-        "auxiliary_code": f.get("auxiliary_code", ""),
-        "company": f.get("company", ""),
-        "model_or_joint": model,
-        "production_date": f.get("production_date", ""),
+        "field_values": list(item["fields"].values()),
         "data": item.get("data", ""),
     }
 
@@ -172,25 +171,19 @@ def compose_label(item: dict, config: Config) -> Image.Image:
     bc_font = get_font(config.barcode_text_font_size)
     tc = config.text_color
 
-    # ---- 第一行元数据（左对齐）----
-    _draw_left(
-        draw, fields["category_name"], meta_font, config.col1_x, config.row1_y, tc
-    )
-    _draw_left(
-        draw, fields["quantity_or_weight"], meta_font, config.col2_x, config.row1_y, tc
-    )
-    _draw_left(
-        draw, fields["auxiliary_code"], meta_font, config.col3_x, config.row1_y, tc
-    )
+    # ---- 元数据（左对齐，按 JSON 顺序映射到网格位置）----
+    cols = [config.col1_x, config.col2_x, config.col3_x]
+    rows = [config.row1_y, config.row2_y]
 
-    # ---- 第二行元数据（左对齐）----
-    _draw_left(draw, fields["company"], meta_font, config.col1_x, config.row2_y, tc)
-    _draw_left(
-        draw, fields["model_or_joint"], meta_font, config.col2_x, config.row2_y, tc
-    )
-    _draw_left(
-        draw, fields["production_date"], meta_font, config.col3_x, config.row2_y, tc
-    )
+    # 种类名称固定在 (col1, row1)
+    _draw_left(draw, fields["category_name"], meta_font, cols[0], rows[0], tc)
+
+    # 其余字段按 JSON 出现顺序，经 field_grid 映射到 (列, 行)
+    for i, val in enumerate(fields["field_values"]):
+        if i >= len(config.field_grid):
+            break
+        col_i, row_i = config.field_grid[i]
+        _draw_left(draw, val, meta_font, cols[col_i], rows[row_i], tc)
 
     # ---- 二维码 ----
     qr_img = generate_qr(fields["data"], config.qr_size)
