@@ -29,6 +29,12 @@
 > 注意，fields里面各个字段的顺序决定了图片中的顺序
 >
 > 例如：如果auxiliary_code和company换了位置，那么auxiliary_code的位置会和company对换
+>
+> ---
+>
+> 2026/7/3 15:50更新
+>
+> 我艹我在说什么，是auxiliary_code和company在json中换了位置，那么在图片中的位置也会互换
 
 ### 修改图片各元素的位置
 
@@ -40,8 +46,6 @@
     image_width: int = 1980
     image_height: int = 640
 ```
-
-``
 
 ### 运行
 
