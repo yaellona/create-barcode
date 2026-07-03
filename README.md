@@ -26,7 +26,9 @@
 
 `category_id`对应的类别名可在`main.py`中的字典`CATEGORY_NAMES`修改。
 
-fields包含的内容最好<=5。
+> 注意，fields里面各个字段的顺序决定了图片中的顺序
+>
+> 例如：如果auxiliary_code和company换了位置，那么auxiliary_code的位置会和company对换
 
 ### 修改图片各元素的位置
 
